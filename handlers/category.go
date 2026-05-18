@@ -6,11 +6,20 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cache"
 	"github.com/gofiber/storage/memory/v2"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
+
+type CategoryHandler struct {
+	db *mongo.Database
+}
 
 var categoryCacheStore = memory.New()
 
-func RegisterCategoryRoutes(router fiber.Router) {
+func RegisterCategoryRoutes(router fiber.Router, db *mongo.Database) {
+	handler := &CategoryHandler{
+		db: db,
+	}
+
 	categories := router.Group("/categories")
 
 	cache := cache.New(cache.Config{
@@ -19,9 +28,9 @@ func RegisterCategoryRoutes(router fiber.Router) {
 		Storage:             categoryCacheStore,
 	})
 
-	categories.Get("/", cache, getAllCategories)
+	categories.Get("/", cache, handler.getAllCategories)
 }
 
-func getAllCategories(c fiber.Ctx) error {
+func (h *CategoryHandler) getAllCategories(c fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Get all categories"})
 }

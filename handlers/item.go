@@ -1,56 +1,35 @@
 package handlers
 
 import (
+	"context"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cache"
 	"github.com/gofiber/storage/memory/v2"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-type Item struct {
-	Name     string  `json:"name"`
-	Price    float64 `json:"price"`
-	Image    string  `json:"image"`
-	Category string  `json:"category"`
+type ItemHandler struct {
+	db *mongo.Database
 }
 
-var itemsData = []Item{
-	{
-		Name:     "Shawai",
-		Price:    550.0,
-		Image:    "https://ik.imagekit.io/akhildev/flamespot/shawai.jpeg",
-		Category: "Mains",
-	},
-	{
-		Name:     "Alfaham",
-		Price:    480.0,
-		Image:    "https://ik.imagekit.io/akhildev/flamespot/alfaham.jpeg",
-		Category: "Mains",
-	},
-	{
-		Name:     "Kuboos",
-		Price:    15.0,
-		Image:    "https://ik.imagekit.io/akhildev/flamespot/kuboos.jpeg",
-		Category: "Breads",
-	},
-	{
-		Name:     "Parotta",
-		Price:    20.0,
-		Image:    "https://ik.imagekit.io/akhildev/flamespot/parotta.jpeg",
-		Category: "Breads",
-	},
-	{
-		Name:     "Lime Juice",
-		Price:    25.0,
-		Image:    "https://ik.imagekit.io/akhildev/flamespot/lime.jpeg",
-		Category: "Drinks",
-	},
+type Item struct {
+	ID       bson.ObjectID `json:"id" bson:"_id,omitempty"`
+	Name     string        `json:"name" bson:"name"`
+	Price    float64       `json:"price" bson:"price"`
+	Image    string        `json:"image" bson:"image"`
+	Category string        `json:"category" bson:"category"`
 }
 
 var itemCacheStore = memory.New()
 
-func RegisterItemRoutes(router fiber.Router) {
+func RegisterItemRoutes(router fiber.Router, db *mongo.Database) {
+	handler := &ItemHandler{
+		db: db,
+	}
+
 	items := router.Group("/items")
 
 	cache := cache.New(cache.Config{
@@ -59,9 +38,33 @@ func RegisterItemRoutes(router fiber.Router) {
 		Storage:             itemCacheStore,
 	})
 
-	items.Get("/", cache, getAllItems)
+	items.Get("/", cache, handler.getAllItems)
 }
 
-func getAllItems(c fiber.Ctx) error {
-	return c.JSON(itemsData)
+func (h *ItemHandler) getAllItems(c fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := h.db.Collection("items")
+
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch items from the database",
+		})
+	}
+	defer cursor.Close(ctx)
+
+	var items []Item
+	if err := cursor.All(ctx, &items); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to parse items",
+		})
+	}
+
+	if items == nil {
+		items = []Item{}
+	}
+
+	return c.JSON(items)
 }
