@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flamespot-api/handlers"
 	"log"
 	"os"
 	"time"
@@ -16,9 +17,16 @@ func main() {
 		WriteTimeout: 5 * time.Second,
 	})
 
-	app.Get("/", func(c fiber.Ctx) error {
-		return c.SendString("Hello, World!")
+	app.Get("/health", func(c fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status": "healthy",
+		})
 	})
+
+	v1 := app.Group("/api/v1")
+	handlers.RegisterItemRoutes(v1)
+	handlers.RegisterCategoryRoutes(v1)
+	handlers.RegisterOrderRoutes(v1)
 
 	port := os.Getenv("PORT")
 	if port == "" {
