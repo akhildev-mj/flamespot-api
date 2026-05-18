@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cache"
+	"github.com/gofiber/storage/memory/v2"
 )
 
 type Item struct {
@@ -47,12 +48,15 @@ var itemsData = []Item{
 	},
 }
 
+var itemCacheStore = memory.New()
+
 func RegisterItemRoutes(router fiber.Router) {
 	items := router.Group("/items")
 
 	cache := cache.New(cache.Config{
-		Expiration:          30 * time.Second,
+		Expiration:          30 * 24 * time.Hour,
 		DisableCacheControl: false,
+		Storage:             itemCacheStore,
 	})
 
 	items.Get("/", cache, getAllItems)

@@ -2,7 +2,7 @@
 # Development Tools & Scripts
 # ====================================================================================
 
-.PHONY: dev fmt build start clean
+.PHONY: dev fmt build start clean tidy
 
 # Run the app locally in development mode
 dev:
@@ -28,3 +28,8 @@ start:
 clean:
 	@echo "🗑️ Cleaning build directory..."
 	rm -rf bin/
+
+# Tidy dependencies
+tidy:
+	@echo "🧹 Tidying up dependencies..."
+	go mod tidy

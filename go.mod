@@ -2,7 +2,10 @@ module flamespot-api
 
 go 1.26.3
 
-require github.com/gofiber/fiber/v3 v3.2.0
+require (
+	github.com/gofiber/fiber/v3 v3.2.0
+	github.com/gofiber/storage/memory/v2 v2.1.2
+)
 
 require (
 	github.com/andybalholm/brotli v1.2.1 // indirect

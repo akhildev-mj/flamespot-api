@@ -1,11 +1,25 @@
 package handlers
 
-import "github.com/gofiber/fiber/v3"
+import (
+	"time"
+
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cache"
+	"github.com/gofiber/storage/memory/v2"
+)
+
+var orderCacheStore = memory.New()
 
 func RegisterOrderRoutes(router fiber.Router) {
 	orders := router.Group("/orders")
 
-	orders.Get("/", getAllOrders)
+	cache := cache.New(cache.Config{
+		Expiration:          30 * 24 * time.Hour,
+		DisableCacheControl: false,
+		Storage:             orderCacheStore,
+	})
+
+	orders.Get("/", cache, getAllOrders)
 }
 
 func getAllOrders(c fiber.Ctx) error {
