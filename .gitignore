@@ -1,0 +1,43 @@
+# ====================================================================================
+# Go Build Artifacts
+# ====================================================================================
+# Ignore the bin directory where 'make build' stores the compiled server
+/bin/
+# Ignore any rogue compiled binaries at the root level
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.prof
+
+# ====================================================================================
+# Dependencies
+# ====================================================================================
+# Godeps and vendored dependencies can be rebuilt; go.mod/go.sum are enough
+/vendor/
+
+# ====================================================================================
+# Environment Variables & Secrets
+# ====================================================================================
+# Never commit your local environment files containing API keys or ports
+.env
+.env.local
+.env.*.local
+
+# ====================================================================================
+# IDEs and Editors
+# ====================================================================================
+# VS Code
+.vscode/
+!.vscode/extensions.json
+
+# JetBrains (GoLand / IntelliJ)
+.idea/
+*.iw
+*.iws
+
+# System files
+.DS_Store
+Thumbs.db
