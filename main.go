@@ -53,7 +53,7 @@ func main() {
 	}
 	fmt.Println("Successfully connected to MongoDB Atlas!")
 
-	db := client.Database("flamespot")
+	db := client.Database("flamespot_db")
 	database.RunMigrationsAndSeed(db)
 
 	app.Get("/health", func(c fiber.Ctx) error {
