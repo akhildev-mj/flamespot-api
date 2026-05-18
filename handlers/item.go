@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cache"
 )
 
 type Item struct {
@@ -47,7 +50,12 @@ var itemsData = []Item{
 func RegisterItemRoutes(router fiber.Router) {
 	items := router.Group("/items")
 
-	items.Get("/", getAllItems)
+	cache := cache.New(cache.Config{
+		Expiration:          30 * time.Second,
+		DisableCacheControl: false,
+	})
+
+	items.Get("/", cache, getAllItems)
 }
 
 func getAllItems(c fiber.Ctx) error {
