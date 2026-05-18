@@ -64,8 +64,7 @@ func main() {
 
 	v1 := app.Group("/api/v1")
 
-	handlers.RegisterItemRoutes(v1, db)
-	handlers.RegisterCategoryRoutes(v1, db)
+	handlers.RegisterMenuRoutes(v1, db)
 	handlers.RegisterOrderRoutes(v1, db)
 
 	port := os.Getenv("PORT")
