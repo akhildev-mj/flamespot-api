@@ -2,79 +2,47 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"os"
-	"time"
+	"strings"
 
+	"flamespot-api/config"
 	"flamespot-api/database"
-	"flamespot-api/handlers"
+	"flamespot-api/router"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, relying on system environment variables")
-	}
+	cfg := config.LoadConfig()
 
-	app := fiber.New(fiber.Config{
-		BodyLimit:    1 * 1024 * 1024,
-		IdleTimeout:  10 * time.Second,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-	})
-
-	mongoURI := os.Getenv("MONGODB_URI")
-	if mongoURI == "" {
-		log.Fatal("Fatal Error: MONGODB_URI environment variable is not set!")
-	}
-
-	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI(mongoURI).SetServerAPIOptions(serverAPI)
-
-	client, err := mongo.Connect(opts)
+	client, db, err := database.Connect(cfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to MongoDB: %v", err)
+		log.Fatalf("Database connection failed: %v", err)
 	}
-
 	defer func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
-			log.Fatalf("Error disconnecting from MongoDB: %v", err)
+		if err := client.Disconnect(context.TODO()); err != nil {
+			log.Fatalf("Error disconnecting database: %v", err)
 		}
 	}()
 
-	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
-		log.Fatalf("Failed to ping MongoDB: %v", err)
-	}
-	fmt.Println("Successfully connected to MongoDB Atlas!")
-
-	db := client.Database("flamespot_db")
-	database.RunMigrationsAndSeed(db)
-
-	app.Get("/health", func(c fiber.Ctx) error {
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"status": "healthy",
-		})
+	app := fiber.New(fiber.Config{
+		BodyLimit:    config.MaxBodySize,
+		IdleTimeout:  config.IdleTimeout,
+		ReadTimeout:  config.ReadTimeout,
+		WriteTimeout: config.WriteTimeout,
 	})
 
-	v1 := app.Group("/api/v1")
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: cfg.CORSAllowedOrigins,
+		AllowMethods: strings.Split(config.CORSMethods, ","),
+		AllowHeaders: strings.Split(config.CORSHeaders, ","),
+	}))
 
-	handlers.RegisterMenuRoutes(v1, db)
-	handlers.RegisterOrderRoutes(v1, db)
+	router.SetupRoutes(app, db, cfg)
+	log.Printf("Server started successfully and is listening on port %s", cfg.Port)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
-	}
-
-	log.Printf("Flame Spot API server booting on port %s...", port)
-
-	if err := app.Listen(":"+port, fiber.ListenConfig{
+	if err := app.Listen(":"+cfg.Port, fiber.ListenConfig{
 		EnablePrefork:         false,
 		DisableStartupMessage: true,
 	}); err != nil {
