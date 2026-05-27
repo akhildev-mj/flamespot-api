@@ -28,5 +28,5 @@ type Order struct {
 	SavedAt   int64      `json:"savedAt" bson:"savedAt"`
 	DeletedAt int64      `json:"deletedAt" bson:"deletedAt"`
 	CreatedAt int64      `json:"-" bson:"created_at"`
-	UpdatedAt int64      `json:"-" bson:"updated_at"`
+	UpdatedAt int64      `json:"updatedAt" bson:"updated_at"`
 }

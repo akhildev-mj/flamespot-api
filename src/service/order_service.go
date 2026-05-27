@@ -35,7 +35,7 @@ func (s *orderService) GetOrders(limit int64, cursor int64, statusFilter string,
 	filter := bson.M{}
 
 	if cursor > 0 {
-		filter["orderedAt"] = bson.M{"$lt": cursor}
+		filter["updated_at"] = bson.M{"$lt": cursor}
 	}
 
 	if statusFilter != "" && statusFilter != string(model.StatusAll) {
