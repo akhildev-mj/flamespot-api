@@ -5,9 +5,9 @@ import (
 	"log"
 	"strings"
 
-	"flamespot-api/config"
-	"flamespot-api/database"
-	"flamespot-api/router"
+	"flamespot-api/src/config"
+	"flamespot-api/src/database"
+	"flamespot-api/src/router"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -40,6 +40,7 @@ func main() {
 	}))
 
 	router.SetupRoutes(app, db, cfg)
+
 	log.Printf("Server started successfully and is listening on port %s", cfg.Port)
 
 	if err := app.Listen(":"+cfg.Port, fiber.ListenConfig{
