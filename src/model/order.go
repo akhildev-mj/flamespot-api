@@ -23,10 +23,10 @@ type Order struct {
 	Discount  float64    `json:"discount" bson:"discount"`
 	SubTotal  float64    `json:"subTotal" bson:"subTotal"`
 	Status    Status     `json:"status" bson:"status"`
-	OrderedAt int64      `json:"orderedAt" bson:"orderedAt"`
-	BilledAt  int64      `json:"billedAt" bson:"billedAt"`
-	SavedAt   int64      `json:"savedAt" bson:"savedAt"`
-	DeletedAt int64      `json:"deletedAt" bson:"deletedAt"`
+	OrderedAt *int64     `json:"orderedAt,omitempty" bson:"orderedAt,omitempty"`
+	BilledAt  *int64     `json:"billedAt,omitempty" bson:"billedAt,omitempty"`
+	SavedAt   *int64     `json:"savedAt,omitempty" bson:"savedAt,omitempty"`
+	DeletedAt *int64     `json:"deletedAt,omitempty" bson:"deletedAt,omitempty"`
 	CreatedAt int64      `json:"-" bson:"created_at"`
 	UpdatedAt int64      `json:"updatedAt" bson:"updated_at"`
 }

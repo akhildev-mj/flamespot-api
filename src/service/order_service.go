@@ -89,15 +89,6 @@ func (s *orderService) CreateOrder(order model.Order) (model.Order, error) {
 		order.Status = model.StatusOrdered
 	}
 
-	switch order.Status {
-	case model.StatusSaved:
-		order.SavedAt = now
-	case model.StatusBilled:
-		order.BilledAt = now
-	case model.StatusDeleted:
-		order.DeletedAt = now
-	}
-
 	opts := options.Replace().SetUpsert(true)
 	_, err := collection.ReplaceOne(ctx, bson.M{"_id": order.ID}, order, opts)
 
@@ -127,19 +118,7 @@ func (s *orderService) UpdateOrder(id string, updates map[string]interface{}) (m
 		return model.Order{}, errors.New("order not found")
 	}
 
-	now := time.Now().UnixMilli()
-	updates["updated_at"] = now
-
-	if statusVal, ok := updates["status"].(string); ok {
-		switch model.Status(statusVal) {
-		case model.StatusSaved:
-			updates["savedAt"] = now
-		case model.StatusBilled:
-			updates["billedAt"] = now
-		case model.StatusDeleted:
-			updates["deletedAt"] = now
-		}
-	}
+	updates["updated_at"] = time.Now().UnixMilli()
 
 	_, hasTotal := updates["total"]
 	_, hasDiscount := updates["discount"]

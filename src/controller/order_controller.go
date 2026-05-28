@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"log"
 	"strconv"
 
 	"flamespot-api/src/config"
@@ -76,7 +75,6 @@ func (c *OrderController) CreateOrder(ctx fiber.Ctx) error {
 	var order model.Order
 
 	if err := ctx.Bind().JSON(&order); err != nil {
-		log.Print(err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
 			Error: "Invalid request body",
 		})
@@ -85,12 +83,6 @@ func (c *OrderController) CreateOrder(ctx fiber.Ctx) error {
 	if order.ID == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
 			Error: "Order ID is required. The frontend must generate and provide the ID.",
-		})
-	}
-
-	if order.OrderedAt == 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
-			Error: "orderedAt is a mandatory field and cannot be empty or zero.",
 		})
 	}
 

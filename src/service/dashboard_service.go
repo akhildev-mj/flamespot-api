@@ -47,8 +47,11 @@ func (s *dashboardService) GetSummary() (model.DashboardSummary, error) {
 	}
 
 	categoryMap := make(map[string]string)
+	categorySalesMap := make(map[string]int)
+
 	for _, c := range categories {
 		categoryMap[c.ID.Hex()] = c.Name
+		categorySalesMap[c.ID.Hex()] = 0
 	}
 
 	currentTime := time.Now()
@@ -78,52 +81,56 @@ func (s *dashboardService) GetSummary() (model.DashboardSummary, error) {
 	var currTurnCount, prevTurnCount int64
 
 	revenueByDay := make(map[string]float64)
-	categorySalesMap := make(map[string]int)
 
 	for _, order := range orders {
 		if order.Status != model.StatusDeleted {
-			isCurrent := order.OrderedAt >= currentPeriodStart
+			if order.OrderedAt != nil {
+				orderedTime := *order.OrderedAt
+				isCurrent := orderedTime >= currentPeriodStart
 
-			if isCurrent {
-				currRevenue += order.SubTotal
-				currOrders++
+				if isCurrent {
+					currRevenue += order.SubTotal
+					currOrders++
 
-				switch order.Type {
-				case model.TypeDineIn:
-					currDineIn++
-				case model.TypeTakeaway:
-					currTakeaway++
-				}
+					switch order.Type {
+					case model.TypeDineIn:
+						currDineIn++
+					case model.TypeTakeaway:
+						currTakeaway++
+					}
 
-				for _, item := range order.Items {
-					currItems += item.Quantity
-					categorySalesMap[item.MenuItem.CategoryID] += item.Quantity
-				}
-				orderTime := time.UnixMilli(order.OrderedAt)
-				dayStr := orderTime.Format("Mon")
-				revenueByDay[dayStr] += order.SubTotal
+					for _, item := range order.Items {
+						currItems += item.Quantity
+						if _, exists := categorySalesMap[item.MenuItem.CategoryID]; exists {
+							categorySalesMap[item.MenuItem.CategoryID] += item.Quantity
+						}
+					}
+					orderTimeObj := time.UnixMilli(orderedTime)
+					dayStr := orderTimeObj.Format("Mon")
+					revenueByDay[dayStr] += order.SubTotal
 
-				if order.BilledAt > 0 && order.OrderedAt > 0 && order.BilledAt >= order.OrderedAt {
-					currTurnSum += (order.BilledAt - order.OrderedAt)
-					currTurnCount++
-				}
-			} else {
-				prevRevenue += order.SubTotal
-				prevOrders++
+					if order.BilledAt != nil && *order.BilledAt >= orderedTime {
+						currTurnSum += (*order.BilledAt - orderedTime)
+						currTurnCount++
+					}
+				} else {
+					prevRevenue += order.SubTotal
+					prevOrders++
 
-				switch order.Type {
-				case model.TypeDineIn:
-					prevDineIn++
-				case model.TypeTakeaway:
-					prevTakeaway++
-				}
+					switch order.Type {
+					case model.TypeDineIn:
+						prevDineIn++
+					case model.TypeTakeaway:
+						prevTakeaway++
+					}
 
-				for _, item := range order.Items {
-					prevItems += item.Quantity
-				}
-				if order.BilledAt > 0 && order.OrderedAt > 0 && order.BilledAt >= order.OrderedAt {
-					prevTurnSum += (order.BilledAt - order.OrderedAt)
-					prevTurnCount++
+					for _, item := range order.Items {
+						prevItems += item.Quantity
+					}
+					if order.BilledAt != nil && *order.BilledAt >= orderedTime {
+						prevTurnSum += (*order.BilledAt - orderedTime)
+						prevTurnCount++
+					}
 				}
 			}
 		}
@@ -228,7 +235,7 @@ func (s *dashboardService) GetSummary() (model.DashboardSummary, error) {
 		sortedCategories = append(sortedCategories, kv{k, v})
 	}
 
-	sort.Slice(sortedCategories, func(i, j int) bool {
+	sort.SliceStable(sortedCategories, func(i, j int) bool {
 		return sortedCategories[i].Value > sortedCategories[j].Value
 	})
 
@@ -279,7 +286,11 @@ func (s *dashboardService) ExportDashboard() ([]byte, error) {
 	_ = writer.Write(headers)
 
 	for _, order := range orders {
-		dateStr := time.UnixMilli(order.OrderedAt).Format(time.RFC3339)
+		dateStr := ""
+		if order.OrderedAt != nil {
+			dateStr = time.UnixMilli(*order.OrderedAt).Format(time.RFC3339)
+		}
+
 		row := []string{
 			order.ID,
 			string(order.Type),
